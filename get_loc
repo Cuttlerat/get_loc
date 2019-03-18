@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+yandex_curl() {
+    local bssid="$1"
+    curl -s "http://mobile.maps.yandex.net/cellid_location/?clid=1866854&lac=-1&cellid=-1&operatorid=null&countrycode=null&signalstrength=-1&wifinetworks=${bssid}:-65&app=ymetro"
+}
+
+main() {
+    local bssid="${1//:/}"
+    tmp=$(mktemp)
+    yandex_curl "${bssid}" > "${tmp}"
+    latitude="$(grep -o " latitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
+    longitude="$(grep -o " longitude=\"[-.0-9]\+\"" "${tmp}"| sed 's/[^-.0-9]//g')"
+    echo "https://www.google.com/maps/?q=${latitude},${longitude}"
+}
+
+main "$@"
