@@ -5,18 +5,52 @@ yandex_curl() {
     curl -s "http://mobile.maps.yandex.net/cellid_location/?clid=1866854&lac=-1&cellid=-1&operatorid=null&countrycode=null&signalstrength=-1&wifinetworks=${bssid}:-65&app=ymetro"
 }
 
-main() {
-    local bssid="${1//:/}"
-    tmp=$(mktemp)
-    yandex_curl "${bssid}" > "${tmp}"
-    latitude="$(grep -o " latitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
-    longitude="$(grep -o " longitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
+usage() {
 
-    if [[ "${latitude}${longitude}" ]]; then
-        echo "https://www.google.com/maps/?q=${latitude},${longitude}"
-    else
-        echo "Nothing found"
-    fi
+    cat <<EOF
+Get BSSID Location
+
+Usage: ${0##*/} bssid_1 bssid_2 bssid_n
+Options:
+    -h, --help       - This help text
+    -s, --successful - Print only found locations
+
+EOF
+    exit 0
+}
+
+main() {
+    local bssid_array=()
+
+    for arg in "$@"; do
+        case "${arg}" in
+            -s|--successful) 
+                successful=true
+                continue
+                ;;
+            -h|--help)
+                help=true
+                ;;
+        esac
+        if [[ "${help}" ]]; then
+            usage
+        fi
+        bssid_array=("${bssid_array[@]}" "${arg}")
+    done
+
+    for raw_bssid in "${bssid_array[@]}"; do
+        local bssid="${raw_bssid//:/}"
+        tmp=$(mktemp)
+        yandex_curl "${bssid}" > "${tmp}"
+        latitude="$(grep -o " latitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
+        longitude="$(grep -o " longitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
+
+        if [[ "${latitude}${longitude}" ]]; then
+            echo "[${raw_bssid}] https://www.google.com/maps/?q=${latitude},${longitude}"
+        elif [[ ! "${successful}" ]]; then
+            echo "[${raw_bssid}] Not found"
+        fi
+    done
 }
 
 main "$@"
