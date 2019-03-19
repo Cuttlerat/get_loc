@@ -44,6 +44,7 @@ main() {
         yandex_curl "${bssid}" > "${tmp}"
         latitude="$(grep -o " latitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
         longitude="$(grep -o " longitude=\"[-.0-9]\+\"" "${tmp}" | sed 's/[^-.0-9]//g')"
+        rm "${tmp}"
 
         if [[ "${latitude}${longitude}" ]]; then
             echo "[${raw_bssid}] https://www.google.com/maps/?q=${latitude},${longitude}"
